@@ -1,15 +1,17 @@
-import streamlit as st
 import cv2
-import io
 import numpy as np
-from PIL import Image
+import streamlit as st
 import requests
+from PIL import Image
 from transformers import BlipProcessor, BlipForConditionalGeneration, SpeechT5Processor, SpeechT5ForTextToSpeech, SpeechT5HifiGan
 import os
 import torch
 import soundfile as sf
 from datasets import load_dataset
 import matplotlib.pyplot as plt
+
+# Suppress OpenCV warnings
+cv2.setLogLevel(0)
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
@@ -138,7 +140,7 @@ def main():
 
 
     # Choose image source
-    image_source = st.radio("Select Image Source:", ("Upload Image", "Open from URL", "Live Camera Feed"))
+    image_source = st.radio("Select Image Source:", ("Upload Image", "Open from URL"))
 
     image = None
 
@@ -150,7 +152,7 @@ def main():
         else:
             image = None
 
-    elif image_source == "Open from URL":
+    else:
         # Input box for image URL
         url = st.text_input("Enter the image URL:")
         if url:
@@ -165,18 +167,73 @@ def main():
                 st.error(f"Error loading image from URL: {e}")
                 image = None
 
-    else:
-        # Capture video from webcam
-        cap = cv2.VideoCapture(0)
-        if cap.isOpened():
-            ret, frame = cap.read()
-            if ret:
-                # Convert frame to Image
-                image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-        else:
-            st.error("Unable to access camera.")
-
     # Generate caption and play sound button
     if image is not None:
         # Display the uploaded image
-        st.image(image, caption='
+        st.image(image, caption='Uploaded Image', use_column_width=True)
+
+        # Initialize image captioning models
+        caption_processor, caption_model = initialize_image_captioning()
+
+        # Initialize speech synthesis models
+        speech_processor, speech_model, speech_vocoder, speaker_embeddings = initialize_speech_synthesis()
+
+        # Generate caption
+        with st.spinner("Generating Caption..."):
+            output_caption = generate_caption(caption_processor, caption_model, image)
+
+        # Display the caption
+        st.subheader("Caption:")
+        st.write(output_caption)
+        
+        # Generate speech from the caption
+        with st.spinner("Generating Speech..."):
+            generate_speech(speech_processor, speech_model, speech_vocoder, speaker_embeddings, output_caption)
+
+        
+        st.subheader("Audio:")
+        # Play the generated sound
+        play_sound()
+
+        # Visualize the speech waveform
+        with st.expander("See visualization"):
+            visualize_speech()
+
+
+# Function to capture video frames from camera
+def capture_video():
+    cap = cv2.VideoCapture(0)
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            st.error("Failed to capture frame from camera.")
+            break
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        st.image(frame, channels="RGB", use_column_width=True)
+        if st.button("Generate Caption and Speech"):
+            image = Image.fromarray(frame)
+            st.write("Generating caption and speech...")
+            # Initialize image captioning models
+            caption_processor, caption_model = initialize_image_captioning()
+
+            # Initialize speech synthesis models
+            speech_processor, speech_model, speech_vocoder, speaker_embeddings = initialize_speech_synthesis()
+
+            # Generate caption
+            output_caption = generate_caption(caption_processor, caption_model, image)
+
+            # Generate speech from the caption
+            generate_speech(speech_processor, speech_model, speech_vocoder, speaker_embeddings, output_caption)
+
+            # Play the generated sound
+            play_sound()
+
+            # Visualize the speech waveform
+            visualize_speech()
+    cap.release()
+
+if __name__ == "__main__":
+    # Run the main Streamlit app
+    main()
+    # Run the camera capture function
+    capture_video()
