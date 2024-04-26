@@ -1,5 +1,3 @@
-import cv2
-import numpy as np
 import streamlit as st
 import requests
 from PIL import Image
@@ -9,10 +7,7 @@ import torch
 import soundfile as sf
 from datasets import load_dataset
 import matplotlib.pyplot as plt
-
-# Suppress OpenCV warnings
-cv2.setLogLevel(0)
-
+import numpy as np
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 # Model Description
@@ -200,40 +195,5 @@ def main():
             visualize_speech()
 
 
-# Function to capture video frames from camera
-def capture_video():
-    cap = cv2.VideoCapture(0)
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            st.error("Failed to capture frame from camera.")
-            break
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        st.image(frame, channels="RGB", use_column_width=True)
-        if st.button("Generate Caption and Speech"):
-            image = Image.fromarray(frame)
-            st.write("Generating caption and speech...")
-            # Initialize image captioning models
-            caption_processor, caption_model = initialize_image_captioning()
-
-            # Initialize speech synthesis models
-            speech_processor, speech_model, speech_vocoder, speaker_embeddings = initialize_speech_synthesis()
-
-            # Generate caption
-            output_caption = generate_caption(caption_processor, caption_model, image)
-
-            # Generate speech from the caption
-            generate_speech(speech_processor, speech_model, speech_vocoder, speaker_embeddings, output_caption)
-
-            # Play the generated sound
-            play_sound()
-
-            # Visualize the speech waveform
-            visualize_speech()
-    cap.release()
-
 if __name__ == "__main__":
-    # Run the main Streamlit app
     main()
-    # Run the camera capture function
-    capture_video()
