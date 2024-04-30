@@ -103,4 +103,4 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.markdown("Developed by Alim Tleuliyev")
     st.sidebar.markdown("Contact: [alim.tleuliyev@nu.edu.kz](mailto:alim.tleuliyev@nu.edu.kz)")
-    st.sidebar.markdown("GitHub: [Repo](https
+    st.sidebar.markdown("GitHub: [Repo](https)")
